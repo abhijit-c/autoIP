@@ -1,0 +1,11 @@
+name: pyGaussianIP
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python
+  - numpy
+  - scipy
+  - matplotlib
+  - pytest
+  - pip
