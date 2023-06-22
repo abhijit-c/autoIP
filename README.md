@@ -1,2 +1,2 @@
-# pyGaussianIP
-Python library for Bayesian Inverse Problems governed by Gaussians.
+# BIPLib
+Python library for solving Bayesian Inverse Problems.
