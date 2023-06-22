@@ -1,4 +1,4 @@
-name: pyGaussianIP
+name: biplib
 channels:
   - conda-forge
   - defaults
