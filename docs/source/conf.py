@@ -15,10 +15,12 @@ release = "0"
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-import sys
+import sys, os
 
-sys.path.append("../../")
+# sys.path.append("../../")
+sys.path.insert(0, os.path.abspath("../.."))
 import autoip
+
 
 autosummary_generate = True  # Make _autosummary files and include them
 
@@ -29,19 +31,29 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.mathjax",
     "sphinx.ext.autosummary",
+    "sphinx.ext.napoleon",
     "sphinx.ext.doctest",
     "sphinx.ext.intersphinx",
     "sphinx.ext.inheritance_diagram",
     "IPython.sphinxext.ipython_directive",
     "IPython.sphinxext.ipython_console_highlighting",
+    "sphinx_rtd_theme",
 ]
 
 templates_path = ["_templates"]
 exclude_patterns = []
 
+autodoc_type_aliases = {
+    "ArrayLike": "ArrayLike",
+    "Array": "Array",
+    "LinearOperator": "Callable[[ArrayLike], Array]",
+    "Operator": "Callable[[ArrayLike], Array]",
+    "PRNGKey": "PRNGKey",
+}
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = "alabaster"
+# html_theme = "alabaster"
+html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]

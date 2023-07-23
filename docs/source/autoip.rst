@@ -1,21 +1,29 @@
-autoIP's Modules
-================
+autoIP's API Reference
+======================
 
-Inverse problems
-================
-
-.. automodule:: autoip.inverse_problem.TIIP
+.. automodule:: autoip
    :members:
    :undoc-members:
    :show-inheritance:
 
-Utilities
-=========
+Time Independent Inverse problems
+---------------------------------
 
-.. automodule:: autoip.utils.gaussian
+.. automodule:: autoip.TIIP
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Gaussian Utilities
+------------------
+
+.. automodule:: autoip.gaussian
    :members:
    :show-inheritance:
 
-.. automodule:: autoip.utils.notation
+Assorted Type Hints
+-------------------
+
+.. automodule:: autoip.notation
    :members:
    :show-inheritance:

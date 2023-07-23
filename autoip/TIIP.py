@@ -1,16 +1,14 @@
+from __future__ import annotations
 import chex
 import jax
 import jax.numpy as jnp
 import jax.scipy as jsp
 import jaxopt
-from autoip.utils.notation import Operator, LinearOperator, Gaussian
-from autoip.utils.gaussian import Gaussian, gaussian_un_logpdf
+from autoip.notation import Operator, LinearOperator
+from autoip.gaussian import Gaussian, gaussian_un_logpdf
 from jax import Array
 from jax.tree_util import Partial
 from jax.typing import ArrayLike
-from tensorflow_probability.substrates import jax as tfp
-
-tfd = tfp.distributions
 
 
 def linear_Hessian(
