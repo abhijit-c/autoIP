@@ -5,7 +5,7 @@ import jax.numpy as jnp
 import jax.scipy as jsp
 import jaxopt
 from autoip.notation import Operator, LinearOperator
-from autoip.gaussian import Gaussian, un_logpdf
+from autoip.gaussian import Gaussian, un_logpdf, precision_action
 from jax import Array
 from jax.tree_util import Partial
 from jax.typing import ArrayLike
@@ -41,9 +41,7 @@ def linear_Hessian(
     Returns:
         The Hessian action at the given point.
     """
-    G_obs_inv = lambda x: jsp.linalg.cho_solve((P_obs.L, True), x)
-    G_prior_inv = lambda x: jsp.linalg.cho_solve((P_prior.L, True), x)
-    return Ft(G_obs_inv(F(x))) + G_prior_inv(x)
+    return Ft(precision_action(P_obs, F(x))) + precision_action(P_prior, x)
 
 
 def linear_MAP(
@@ -93,11 +91,7 @@ def linear_MAP(
         The MAP estimate.
 
     """
-    G_obs_inv = lambda x: jsp.linalg.cho_solve((P_obs.L, True), x)
-    G_prior_inv = lambda x: jsp.linalg.cho_solve((P_prior.L, True), x)
-
-    rhs = Ft(G_obs_inv(y)) + G_prior_inv(P_prior.mean)
-
+    rhs = Ft(precision_action(P_obs, y)) + precision_action(P_prior, P_prior.mean)
     Hv = Partial(linear_Hessian, P_prior, P_obs, F, Ft)
     MAP, info = jsp.sparse.linalg.cg(Hv, rhs, **kwargs)
     return MAP
@@ -132,5 +126,4 @@ def J(
         y: The observation.
         theta: The point at which to evaluate the cost functional.
     """
-    innov = F(theta) - y
-    return un_logpdf(mu_obs, innov) + un_logpdf(mu_prior, theta)
+    return un_logpdf(mu_obs, F(theta) - y) + un_logpdf(mu_prior, theta)
