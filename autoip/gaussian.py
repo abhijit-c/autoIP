@@ -58,18 +58,22 @@ def sample(G: Gaussian, key: PRNGKey) -> Array:
     return G.mean + G.L @ jax.random.normal(key, G.mean.shape)
 
 
-def un_logpdf(G: Gaussian, x: ArrayLike) -> float:
-    """Compute the unnormalized log-probability of the given Gaussian distribution at a
-    point.
+def logpdf(G: Gaussian, x: ArrayLike, normalized=False) -> float:
+    """Compute the log-probability of the given Gaussian distribution at a point.
 
     This is given by the expression
 
     .. math::
-        \\log \\hat{p}(x) = -\\frac{1}{2} (x - \\mu)^T \\Sigma^{-1} (x - \\mu)
+        \\log \\p(x) = -\\frac{1}{2} (x - \\mu)^T \\Sigma^{-1} (x - \\mu)
+        - \\frac{k}{2} \\log (2\\pi |\\Sigma|)
 
     Args:
         G: The Gaussian distribution.
         x: The point at which to evaluate.
+        normalized: Whether to return the normalized log-probability.
     """
     innov = x - G.mean
-    return -0.5 * jnp.dot(innov, jsp.linalg.cho_solve((G.L, True), innov))
+    p = -0.5 * jnp.dot(innov, jsp.linalg.cho_solve((G.L, True), innov))
+    if normalized:
+        p -= G.L.shape[0]*jnp.log(jnp.prod(jnp.diag(G.L)))
+    return p

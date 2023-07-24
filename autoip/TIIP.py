@@ -5,7 +5,7 @@ import jax.numpy as jnp
 import jax.scipy as jsp
 import jaxopt
 from autoip.notation import Operator, LinearOperator
-from autoip.gaussian import Gaussian, un_logpdf, precision_action
+from autoip.gaussian import Gaussian, logpdf, precision_action
 from jax import Array
 from jax.tree_util import Partial
 from jax.typing import ArrayLike
@@ -97,9 +97,9 @@ def linear_MAP(
     return MAP
 
 
-def J(
-    mu_obs: Gaussian,
-    mu_prior: Gaussian,
+def IPCost(
+    P_obs: Gaussian,
+    P_prior: Gaussian,
     F: Operator,
     y: ArrayLike,
     theta: ArrayLike,
@@ -109,21 +109,55 @@ def J(
     This is given by the expression
 
     .. math::
-        \\hat{J}(\\theta) =
-        ||F(\\theta) - y||_{\\Sigma_{\\rm obs}^{-1}}^2
-        + ||\\theta - \\mu_{\\rm prior}||_{\\Sigma_{\\rm prior}^{-1}}^2
-
-
-    where :math:`\\Sigma_{\\rm obs}` and :math:`\\Sigma_{\\rm prior}` are the covariance
-    matrices of the observation and prior distributions respectively, :math:`F` is the
-    parameter-to-observable map, :math:`y` is the observation, and :math:`\\mu_{\\rm
-    prior}` is the mean of the prior distribution.
+        \\hat{C}(\\theta) =
+        -\\log \\hat{p}(y | F(\\theta)) - \\log \\hat{p}(\\theta)
+    
+    where :math:`\\hat{p}(y | F(\\theta))` is the unnormalized likelihood of the
+    observation given the parameter-to-observable map evaluated at :math:`\\theta` and
+    :math:`\\hat{p}(\\theta)` is the unnormalized prior distribution. 
 
     Args:
-        mu_obs: The observation distribution.
-        mu_prior: The prior distribution.
+        P_obs: The observation distribution.
+        P_prior: The prior distribution.
         F: The parameter-to-observable map.
         y: The observation.
         theta: The point at which to evaluate the cost functional.
     """
-    return un_logpdf(mu_obs, F(theta) - y) + un_logpdf(mu_prior, theta)
+    return -logpdf(P_obs, F(theta) - y) + -logpdf(P_prior, theta)
+
+def gradIPCost(
+    P_obs: Gaussian,
+    P_prior: Gaussian,
+    F: Operator,
+    Jt: LinearOperator,
+    y: ArrayLike,
+    theta: ArrayLike,
+):
+    """Compute the gradient of the cost functional for an inverse problem.
+
+    This is given by the expression
+
+    .. math::
+        \\nabla \\hat{C}(\\theta) =
+        J^T \\Sigma_{\\rm obs}^{-1} \\left( F(\\theta) - y \\right) +
+        \\Sigma_{\\rm prior}^{-1} \\left( \\theta - \\mu_{\\rm prior} \\right)
+    
+    where :math:`\\Sigma_{\\rm obs}` and :math:`\\Sigma_{\\rm prior}` are the covariance
+    matrices of the observation and prior distributions respectively, :math:`F` is the
+    parameter-to-observable map, :math:`J` is the Jacobian of the
+    parameter-to-observable map and particularily :math:`J^T` is the adjoint of the
+    parameter-to-observable map, :math:`y` is the observation, and :math:`\\mu_{\\rm
+    prior}` is the mean of the prior distribution.
+
+    Args:
+        P_obs: The observation distribution.
+        P_prior: The prior distribution.
+        F: The parameter-to-observable map.
+        Jt: The adjoint of the parameter-to-observable map.
+        y: The observation.
+        theta: The point at which to evaluate the gradient of the cost functional.
+    """
+    return (
+        Jt(precision_action(P_obs, F(theta) - y)) 
+        + precision_action(P_prior, theta - P_prior.mean)
+    )
