@@ -33,6 +33,7 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx.ext.napoleon",
     "sphinx.ext.doctest",
+    "sphinx.ext.viewcode",
     "sphinx.ext.intersphinx",
     "sphinx.ext.inheritance_diagram",
     "IPython.sphinxext.ipython_directive",
@@ -46,10 +47,16 @@ exclude_patterns = []
 autodoc_type_aliases = {
     "ArrayLike": "ArrayLike",
     "Array": "Array",
-    "LinearOperator": "Callable[[ArrayLike], Array]",
-    "Operator": "Callable[[ArrayLike], Array]",
+    "LinearOperator": "LinearOperator",
+    "Operator": "Operator",
     "PRNGKey": "PRNGKey",
+    # "LinearOperator": "Callable[[ArrayLike], Array]",
+    # "Operator": "Callable[[ArrayLike], Array]",
 }
+
+autodoc_typehints = "description"
+
+autodoc_member_order = "bysource"
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output

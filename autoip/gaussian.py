@@ -15,7 +15,7 @@ class Gaussian:
 
     In addition to the mean and covariance, the Cholesky factorization of the
     covariance is also stored, i.e. :math:`\Sigma = LL^T`. This is done for
-    reasons of performance. It must be the case that :math:`LL^T = \Sigma` and
+    reasons of performance. It must be the case that :math:`LL^T \\approx \\Sigma` and
     that :math:`L` is lower triangular.
 
     Attributes:
@@ -29,7 +29,22 @@ class Gaussian:
     L: chex.ArrayDevice
 
 
-def gaussian_sample(G: Gaussian, key: PRNGKey) -> Array:
+def precision_action(G: Gaussian, x: ArrayLike) -> Array:
+    """Compute the action of the precision matrix (covariance inverse) of the given
+    Gaussian distribution on a point.
+
+    As each Gaussian is assumed to have an accompanying Cholesky factor, this action
+    is computed using a Cholesky accelerated triangular solve via the Jax function
+    :func:`jax.scipy.linalg.cho_solve`.
+
+    Args:
+        G: The Gaussian distribution.
+        x: The point at which to evaluate the precision action.
+    """
+    return jsp.linalg.cho_solve((G.L, True), x)
+
+
+def sample(G: Gaussian, key: PRNGKey) -> Array:
     """Sample from the given Gaussian distribution.
 
     This is given by the formula :math:`\mu + L\epsilon` where :math:`\epsilon
@@ -43,7 +58,7 @@ def gaussian_sample(G: Gaussian, key: PRNGKey) -> Array:
     return G.mean + G.L @ jax.random.normal(key, G.mean.shape)
 
 
-def gaussian_un_logpdf(G: Gaussian, x: ArrayLike) -> float:
+def un_logpdf(G: Gaussian, x: ArrayLike) -> float:
     """Compute the unnormalized log-probability of the given Gaussian distribution at a
     point.
 
@@ -54,7 +69,7 @@ def gaussian_un_logpdf(G: Gaussian, x: ArrayLike) -> float:
 
     Args:
         G: The Gaussian distribution.
-        x: The point at which to evaluate the unnormalized log-probability.
+        x: The point at which to evaluate.
     """
     innov = x - G.mean
     return -0.5 * jnp.dot(innov, jsp.linalg.cho_solve((G.L, True), innov))
