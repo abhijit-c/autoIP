@@ -52,7 +52,8 @@
 <li class="toctree-l2"><a class="reference internal" href="#module-autoip.TIIP">Time Independent Inverse problems</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#autoip.TIIP.linear_Hessian"><code class="docutils literal notranslate"><span class="pre">linear_Hessian()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#autoip.TIIP.linear_MAP"><code class="docutils literal notranslate"><span class="pre">linear_MAP()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#autoip.TIIP.J"><code class="docutils literal notranslate"><span class="pre">J()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#autoip.TIIP.IPCost"><code class="docutils literal notranslate"><span class="pre">IPCost()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#autoip.TIIP.gradIPCost"><code class="docutils literal notranslate"><span class="pre">gradIPCost()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#module-autoip.gaussian">Gaussian Utilities</a><ul>
@@ -64,7 +65,7 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#autoip.gaussian.precision_action"><code class="docutils literal notranslate"><span class="pre">precision_action()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#autoip.gaussian.sample"><code class="docutils literal notranslate"><span class="pre">sample()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#autoip.gaussian.un_logpdf"><code class="docutils literal notranslate"><span class="pre">un_logpdf()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#autoip.gaussian.logpdf"><code class="docutils literal notranslate"><span class="pre">logpdf()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#module-autoip.notation">Assorted Type Hints</a><ul>
@@ -183,23 +184,21 @@ invalid keyword argument, you’ll get an error from Jax.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="autoip.TIIP.J">
-<span class="sig-prename descclassname"><span class="pre">autoip.TIIP.</span></span><span class="sig-name descname"><span class="pre">J</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mu_obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu_prior</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">F</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theta</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/autoip/TIIP.html#J"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#autoip.TIIP.J" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="autoip.TIIP.IPCost">
+<span class="sig-prename descclassname"><span class="pre">autoip.TIIP.</span></span><span class="sig-name descname"><span class="pre">IPCost</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">P_obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P_prior</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">F</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theta</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/autoip/TIIP.html#IPCost"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#autoip.TIIP.IPCost" title="Permalink to this definition"></a></dt>
 <dd><p>Compute the cost functional for an inverse problem.</p>
 <p>This is given by the expression</p>
 <div class="math notranslate nohighlight">
-\[\hat{J}(\theta) =
-||F(\theta) - y||_{\Sigma_{\rm obs}^{-1}}^2
-+ ||\theta - \mu_{\rm prior}||_{\Sigma_{\rm prior}^{-1}}^2\]</div>
-<p>where <span class="math notranslate nohighlight">\(\Sigma_{\rm obs}\)</span> and <span class="math notranslate nohighlight">\(\Sigma_{\rm prior}\)</span> are the covariance
-matrices of the observation and prior distributions respectively, <span class="math notranslate nohighlight">\(F\)</span> is the
-parameter-to-observable map, <span class="math notranslate nohighlight">\(y\)</span> is the observation, and <span class="math notranslate nohighlight">\(\mu_{\rm
-prior}\)</span> is the mean of the prior distribution.</p>
+\[\hat{C}(\theta) =
+-\log \hat{p}(y | F(\theta)) - \log \hat{p}(\theta)\]</div>
+<p>where <span class="math notranslate nohighlight">\(\hat{p}(y | F(\theta))\)</span> is the unnormalized likelihood of the
+observation given the parameter-to-observable map evaluated at <span class="math notranslate nohighlight">\(\theta\)</span> and
+<span class="math notranslate nohighlight">\(\hat{p}(\theta)\)</span> is the unnormalized prior distribution.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>mu_obs</strong> (<a class="reference internal" href="#autoip.gaussian.Gaussian" title="autoip.gaussian.Gaussian"><em>Gaussian</em></a>) – The observation distribution.</p></li>
-<li><p><strong>mu_prior</strong> (<a class="reference internal" href="#autoip.gaussian.Gaussian" title="autoip.gaussian.Gaussian"><em>Gaussian</em></a>) – The prior distribution.</p></li>
+<li><p><strong>P_obs</strong> (<a class="reference internal" href="#autoip.gaussian.Gaussian" title="autoip.gaussian.Gaussian"><em>Gaussian</em></a>) – The observation distribution.</p></li>
+<li><p><strong>P_prior</strong> (<a class="reference internal" href="#autoip.gaussian.Gaussian" title="autoip.gaussian.Gaussian"><em>Gaussian</em></a>) – The prior distribution.</p></li>
 <li><p><strong>F</strong> (<em>Operator</em>) – The parameter-to-observable map.</p></li>
 <li><p><strong>y</strong> (<em>ArrayLike</em>) – The observation.</p></li>
 <li><p><strong>theta</strong> (<em>ArrayLike</em>) – The point at which to evaluate the cost functional.</p></li>
@@ -207,6 +206,35 @@ prior}\)</span> is the mean of the prior distribution.</p>
 </dd>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="autoip.TIIP.gradIPCost">
+<span class="sig-prename descclassname"><span class="pre">autoip.TIIP.</span></span><span class="sig-name descname"><span class="pre">gradIPCost</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">P_obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P_prior</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">F</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Jt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theta</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/autoip/TIIP.html#gradIPCost"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#autoip.TIIP.gradIPCost" title="Permalink to this definition"></a></dt>
+<dd><p>Compute the gradient of the cost functional for an inverse problem.</p>
+<p>This is given by the expression</p>
+<div class="math notranslate nohighlight">
+\[\nabla \hat{C}(\theta) =
+J^T \Sigma_{\rm obs}^{-1} \left( F(\theta) - y \right) +
+\Sigma_{\rm prior}^{-1} \left( \theta - \mu_{\rm prior} \right)\]</div>
+<p>where <span class="math notranslate nohighlight">\(\Sigma_{\rm obs}\)</span> and <span class="math notranslate nohighlight">\(\Sigma_{\rm prior}\)</span> are the covariance
+matrices of the observation and prior distributions respectively, <span class="math notranslate nohighlight">\(F\)</span> is the
+parameter-to-observable map, <span class="math notranslate nohighlight">\(J\)</span> is the Jacobian of the
+parameter-to-observable map and particularily <span class="math notranslate nohighlight">\(J^T\)</span> is the adjoint of the
+parameter-to-observable map, <span class="math notranslate nohighlight">\(y\)</span> is the observation, and <span class="math notranslate nohighlight">\(\mu_{\rm
+prior}\)</span> is the mean of the prior distribution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>P_obs</strong> (<a class="reference internal" href="#autoip.gaussian.Gaussian" title="autoip.gaussian.Gaussian"><em>Gaussian</em></a>) – The observation distribution.</p></li>
+<li><p><strong>P_prior</strong> (<a class="reference internal" href="#autoip.gaussian.Gaussian" title="autoip.gaussian.Gaussian"><em>Gaussian</em></a>) – The prior distribution.</p></li>
+<li><p><strong>F</strong> (<em>Operator</em>) – The parameter-to-observable map.</p></li>
+<li><p><strong>Jt</strong> (<em>LinearOperator</em>) – The adjoint of the parameter-to-observable map.</p></li>
+<li><p><strong>y</strong> (<em>ArrayLike</em>) – The observation.</p></li>
+<li><p><strong>theta</strong> (<em>ArrayLike</em>) – The point at which to evaluate the gradient of the cost functional.</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
@@ -308,18 +336,19 @@ is computed using a Cholesky accelerated triangular solve via the Jax function
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="autoip.gaussian.un_logpdf">
-<span class="sig-prename descclassname"><span class="pre">autoip.gaussian.</span></span><span class="sig-name descname"><span class="pre">un_logpdf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">G</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/autoip/gaussian.html#un_logpdf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#autoip.gaussian.un_logpdf" title="Permalink to this definition"></a></dt>
-<dd><p>Compute the unnormalized log-probability of the given Gaussian distribution at a
-point.</p>
+<dt class="sig sig-object py" id="autoip.gaussian.logpdf">
+<span class="sig-prename descclassname"><span class="pre">autoip.gaussian.</span></span><span class="sig-name descname"><span class="pre">logpdf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">G</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalized</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/autoip/gaussian.html#logpdf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#autoip.gaussian.logpdf" title="Permalink to this definition"></a></dt>
+<dd><p>Compute the log-probability of the given Gaussian distribution at a point.</p>
 <p>This is given by the expression</p>
 <div class="math notranslate nohighlight">
-\[\log \hat{p}(x) = -\frac{1}{2} (x - \mu)^T \Sigma^{-1} (x - \mu)\]</div>
+\[\log \p(x) = -\frac{1}{2} (x - \mu)^T \Sigma^{-1} (x - \mu)
+- \frac{k}{2} \log (2\pi |\Sigma|)\]</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>G</strong> (<a class="reference internal" href="#autoip.gaussian.Gaussian" title="autoip.gaussian.Gaussian"><em>Gaussian</em></a>) – The Gaussian distribution.</p></li>
 <li><p><strong>x</strong> (<em>ArrayLike</em>) – The point at which to evaluate.</p></li>
+<li><p><strong>normalized</strong> – Whether to return the normalized log-probability.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
