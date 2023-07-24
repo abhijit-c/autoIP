@@ -5,7 +5,7 @@ import jax.numpy as jnp
 import jax.scipy as jsp
 import jaxopt
 from autoip.notation import Operator, LinearOperator
-from autoip.gaussian import Gaussian, logpdf, precision_action
+from autoip.gaussian import Gaussian, logpdf, precision_action, sample
 from jax import Array
 from jax.tree_util import Partial
 from jax.typing import ArrayLike
@@ -111,10 +111,10 @@ def IPCost(
     .. math::
         \\hat{C}(\\theta) =
         -\\log \\hat{p}(y | F(\\theta)) - \\log \\hat{p}(\\theta)
-    
+
     where :math:`\\hat{p}(y | F(\\theta))` is the unnormalized likelihood of the
     observation given the parameter-to-observable map evaluated at :math:`\\theta` and
-    :math:`\\hat{p}(\\theta)` is the unnormalized prior distribution. 
+    :math:`\\hat{p}(\\theta)` is the unnormalized prior distribution.
 
     Args:
         P_obs: The observation distribution.
@@ -124,6 +124,7 @@ def IPCost(
         theta: The point at which to evaluate the cost functional.
     """
     return -logpdf(P_obs, F(theta) - y) + -logpdf(P_prior, theta)
+
 
 def gradIPCost(
     P_obs: Gaussian,
@@ -141,7 +142,7 @@ def gradIPCost(
         \\nabla \\hat{C}(\\theta) =
         J^T \\Sigma_{\\rm obs}^{-1} \\left( F(\\theta) - y \\right) +
         \\Sigma_{\\rm prior}^{-1} \\left( \\theta - \\mu_{\\rm prior} \\right)
-    
+
     where :math:`\\Sigma_{\\rm obs}` and :math:`\\Sigma_{\\rm prior}` are the covariance
     matrices of the observation and prior distributions respectively, :math:`F` is the
     parameter-to-observable map, :math:`J` is the Jacobian of the
@@ -157,7 +158,41 @@ def gradIPCost(
         y: The observation.
         theta: The point at which to evaluate the gradient of the cost functional.
     """
-    return (
-        Jt(precision_action(P_obs, F(theta) - y)) 
-        + precision_action(P_prior, theta - P_prior.mean)
+    return Jt(precision_action(P_obs, F(theta) - y)) + precision_action(
+        P_prior, theta - P_prior.mean
     )
+
+
+def nonlinear_MAP(
+    P_obs: Gaussian,
+    P_prior: Gaussian,
+    F: Operator,
+    Jt: LinearOperator,
+    y: ArrayLike,
+):
+    """Compute the maximum a posteriori (MAP) estimate for a nonlinear inverse problem.
+
+    This is given by solving the optimization problem
+
+    .. math::
+        \\hat{\\theta} = \\arg\\min_{\\theta} \\hat{C}(\\theta)
+
+    where :math:`\\hat{C}(\\theta)` is the cost functional for the inverse problem. This
+    is done using Jax's :func:`jaxopt.LBFGS` function.
+
+    Args:
+        P_obs: The observation distribution.
+        P_prior: The prior distribution.
+        F: The parameter-to-observable map.
+        Jt: The adjoint of the parameter-to-observable map.
+        y: The observation.
+
+    Returns:
+        Returns (params, state) where params is the MAP estimate and state is the state
+        of the optimizer.
+    """
+    F = lambda t: IPCost(P_obs, P_prior, F, y, t)
+    dF = lambda t: gradIPCost(P_obs, P_prior, F, Jt, y, t)
+    F_vag = lambda t: (F(t), dF(t))
+    solver = jaxopt.LBFGS(F_vag, value_and_grad=True)
+    return solver.run(P_prior.mean)
