@@ -64,3 +64,10 @@ autodoc_member_order = "bysource"
 # html_theme = "alabaster"
 html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
+html_context = {
+    "display_github": True,
+    "github_url": "https://github.com/abhijit-c/autoIP"
+}
+rst_prolog = """
+:github_url: https://github.com/abhijit-c/autoIP
+"""
