@@ -11,11 +11,25 @@ from jax.tree_util import Partial
 from jax.typing import ArrayLike
 
 
+@chex.dataclass
+class TIIP:
+    """Dataclass representing a Time Independent Inverse Problem.
+
+    Attributes:
+        P_prior: The prior distribution.
+        P_obs: The observation distribution.
+        F: The parameter-to-observable map.
+        y: The observation.
+    """
+
+    P_prior: Gaussian
+    P_obs: Gaussian
+    F: Operator
+    y: chex.ArrayDevice
+
+
 def linear_Hessian(
-    P_prior: Gaussian,
-    P_obs: Gaussian,
-    F: LinearOperator,
-    Ft: LinearOperator,
+    TIIP: TIIP,
     x: ArrayLike,
 ) -> Array:
     """Compute the Hessian action of the cost functional for a linear
@@ -41,6 +55,8 @@ def linear_Hessian(
     Returns:
         The Hessian action at the given point.
     """
+    P_prior, P_obs, F = TIIP.P_prior, TIIP.P_obs, TIIP.F
+    Ft = jax.vjp(F, (x,))[1]
     return Ft(precision_action(P_obs, F(x))) + precision_action(P_prior, x)
 
 
