@@ -15,7 +15,7 @@ from jax.typing import ArrayLike
 class TIIP:
     """Dataclass representing a Time Independent Inverse Problem.
 
-    Attributes:
+    Args:
         P_prior: The prior distribution.
         P_obs: The observation distribution.
         F: The parameter-to-observable map.
@@ -29,7 +29,7 @@ class TIIP:
 
 
 def linear_Hessian(
-    TIIP: TIIP,
+    ip: TIIP,
     x: ArrayLike,
 ) -> Array:
     """Compute the Hessian action of the cost functional for a linear
@@ -46,26 +46,18 @@ def linear_Hessian(
     linear parameter-to-observable map.
 
     Args:
-        P_prior: The prior distribution.
-        P_obs: The observation distribution.
-        F: The linear parameter-to-observable map.
-        Ft: The adjoint of the linear parameter-to-observable map.
-        x: The point at which to evaluate the Hessian action.
+        ip: The inverse problem represented by a :class:`TIIP` dataclass.
 
     Returns:
         The Hessian action at the given point.
     """
-    P_prior, P_obs, F = TIIP.P_prior, TIIP.P_obs, TIIP.F
-    Ft = jax.vjp(F, (x,))[1]
+    P_prior, P_obs, F = ip.P_prior, ip.P_obs, ip.F
+    Ft = jax.linear_transpose(F, x)
     return Ft(precision_action(P_obs, F(x))) + precision_action(P_prior, x)
 
 
 def linear_MAP(
-    P_obs: Gaussian,
-    P_prior: Gaussian,
-    F: LinearOperator,
-    Ft: LinearOperator,
-    y: ArrayLike,
+    ip: TIIP,
     **kwargs,
 ) -> Array:
     """Compute the maximum a posteriori (MAP) estimate for a linear inverse problem.
@@ -92,11 +84,7 @@ def linear_MAP(
     the linear solver.
 
     Args:
-        P_obs: The observation distribution.
-        P_prior: The prior distribution.
-        F: The linear parameter-to-observable map.
-        Ft: The adjoint of the linear parameter-to-observable map.
-        y: The observation.
+        ip: The inverse problem represented by a :class:`TIIP` dataclass.
 
     Keyword Args:
         **kwargs: Keyword arguments to pass to :func:`jax.scipy.sparse.linalg.cg`. Note:
@@ -107,6 +95,8 @@ def linear_MAP(
         The MAP estimate.
 
     """
+    P_prior, P_obs, F, y = ip.P_prior, ip.P_obs, ip.F, ip.y
+    Ft = jax.linear_transpose(F, P_prior.mean)
     rhs = Ft(precision_action(P_obs, y)) + precision_action(P_prior, P_prior.mean)
     Hv = Partial(linear_Hessian, P_prior, P_obs, F, Ft)
     MAP, info = jsp.sparse.linalg.cg(Hv, rhs, **kwargs)
@@ -114,10 +104,7 @@ def linear_MAP(
 
 
 def IPCost(
-    P_obs: Gaussian,
-    P_prior: Gaussian,
-    F: Operator,
-    y: ArrayLike,
+    ip: TIIP,
     theta: ArrayLike,
 ) -> float:
     """Compute the cost functional for an inverse problem.
@@ -133,21 +120,16 @@ def IPCost(
     :math:`\\hat{p}(\\theta)` is the unnormalized prior distribution.
 
     Args:
-        P_obs: The observation distribution.
-        P_prior: The prior distribution.
-        F: The parameter-to-observable map.
-        y: The observation.
+        ip: The inverse problem represented by a :class:`TIIP` dataclass.
         theta: The point at which to evaluate the cost functional.
     """
+    P_prior, P_obs, F, y = ip.P_prior, ip.P_obs, ip.F, ip.y
     return -logpdf(P_obs, F(theta) - y) + -logpdf(P_prior, theta)
 
 
+# TODO: Register this as a custom derivative to IPCost.
 def gradIPCost(
-    P_obs: Gaussian,
-    P_prior: Gaussian,
-    F: Operator,
-    Jt: LinearOperator,
-    y: ArrayLike,
+    ip: TIIP,
     theta: ArrayLike,
 ):
     """Compute the gradient of the cost functional for an inverse problem.
@@ -167,24 +149,18 @@ def gradIPCost(
     prior}` is the mean of the prior distribution.
 
     Args:
-        P_obs: The observation distribution.
-        P_prior: The prior distribution.
-        F: The parameter-to-observable map.
-        Jt: The adjoint of the parameter-to-observable map.
-        y: The observation.
+        ip: The inverse problem represented by a :class:`TIIP` dataclass.
         theta: The point at which to evaluate the gradient of the cost functional.
     """
+    P_prior, P_obs, F, y = ip.P_prior, ip.P_obs, ip.F, ip.y
+    Jt = jax.vjp(F, theta)[1]
     return Jt(precision_action(P_obs, F(theta) - y)) + precision_action(
         P_prior, theta - P_prior.mean
     )
 
 
 def nonlinear_MAP(
-    P_obs: Gaussian,
-    P_prior: Gaussian,
-    F: Operator,
-    Jt: LinearOperator,
-    y: ArrayLike,
+    ip: TIIP,
 ):
     """Compute the maximum a posteriori (MAP) estimate for a nonlinear inverse problem.
 
@@ -197,18 +173,14 @@ def nonlinear_MAP(
     is done using Jax's :func:`jaxopt.LBFGS` function.
 
     Args:
-        P_obs: The observation distribution.
-        P_prior: The prior distribution.
-        F: The parameter-to-observable map.
-        Jt: The adjoint of the parameter-to-observable map.
-        y: The observation.
+        ip: The inverse problem represented by a :class:`TIIP` dataclass.
 
     Returns:
         Returns (params, state) where params is the MAP estimate and state is the state
         of the optimizer.
     """
-    F = lambda t: IPCost(P_obs, P_prior, F, y, t)
-    dF = lambda t: gradIPCost(P_obs, P_prior, F, Jt, y, t)
+    F = lambda t: IPCost(ip, t)
+    dF = lambda t: gradIPCost(ip, t)
     F_vag = lambda t: (F(t), dF(t))
     solver = jaxopt.LBFGS(F_vag, value_and_grad=True)
-    return solver.run(P_prior.mean)
+    return solver.run(ip.P_prior.mean)

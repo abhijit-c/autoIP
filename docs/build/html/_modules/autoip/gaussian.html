@@ -93,7 +93,7 @@
 <span class="sd">    reasons of performance. It must be the case that :math:`LL^T \\approx \\Sigma` and</span>
 <span class="sd">    that :math:`L` is lower triangular.</span>
 
-<span class="sd">    Attributes:</span>
+<span class="sd">    Args:</span>
 <span class="sd">        mean: The mean of the Gaussian distribution.</span>
 <span class="sd">        cov: The covariance of the Gaussian distribution.</span>
 <span class="sd">        L: The Cholesky factorization of the covariance.</span>
@@ -139,7 +139,7 @@
 <span class="sd">    This is given by the expression</span>
 
 <span class="sd">    .. math::</span>
-<span class="sd">        \\log \\p(x) = -\\frac{1}{2} (x - \\mu)^T \\Sigma^{-1} (x - \\mu)</span>
+<span class="sd">        \\log p(x) = -\\frac{1}{2} (x - \\mu)^T \\Sigma^{-1} (x - \\mu)</span>
 <span class="sd">        - \\frac{k}{2} \\log (2\\pi |\\Sigma|)</span>
 
 <span class="sd">    Args:</span>
@@ -150,7 +150,7 @@
     <span class="n">innov</span> <span class="o">=</span> <span class="n">x</span> <span class="o">-</span> <span class="n">G</span><span class="o">.</span><span class="n">mean</span>
     <span class="n">p</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">innov</span><span class="p">,</span> <span class="n">jsp</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">cho_solve</span><span class="p">((</span><span class="n">G</span><span class="o">.</span><span class="n">L</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span> <span class="n">innov</span><span class="p">))</span>
     <span class="k">if</span> <span class="n">normalized</span><span class="p">:</span>
-        <span class="n">p</span> <span class="o">-=</span> <span class="n">G</span><span class="o">.</span><span class="n">L</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">jnp</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">L</span><span class="p">)))</span>
+        <span class="n">p</span> <span class="o">-=</span> <span class="n">G</span><span class="o">.</span><span class="n">L</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">L</span><span class="p">)))</span>
     <span class="k">return</span> <span class="n">p</span></div>
 </pre></div>
 

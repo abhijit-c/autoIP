@@ -18,7 +18,7 @@ class Gaussian:
     reasons of performance. It must be the case that :math:`LL^T \\approx \\Sigma` and
     that :math:`L` is lower triangular.
 
-    Attributes:
+    Args:
         mean: The mean of the Gaussian distribution.
         cov: The covariance of the Gaussian distribution.
         L: The Cholesky factorization of the covariance.
@@ -64,7 +64,7 @@ def logpdf(G: Gaussian, x: ArrayLike, normalized=False) -> float:
     This is given by the expression
 
     .. math::
-        \\log \\p(x) = -\\frac{1}{2} (x - \\mu)^T \\Sigma^{-1} (x - \\mu)
+        \\log p(x) = -\\frac{1}{2} (x - \\mu)^T \\Sigma^{-1} (x - \\mu)
         - \\frac{k}{2} \\log (2\\pi |\\Sigma|)
 
     Args:
@@ -75,5 +75,5 @@ def logpdf(G: Gaussian, x: ArrayLike, normalized=False) -> float:
     innov = x - G.mean
     p = -0.5 * jnp.dot(innov, jsp.linalg.cho_solve((G.L, True), innov))
     if normalized:
-        p -= G.L.shape[0]*jnp.log(jnp.prod(jnp.diag(G.L)))
+        p -= G.L.shape[0] * jnp.log(jnp.prod(jnp.diag(G.L)))
     return p

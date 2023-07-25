@@ -80,17 +80,31 @@
 <span class="kn">import</span> <span class="nn">jax.scipy</span> <span class="k">as</span> <span class="nn">jsp</span>
 <span class="kn">import</span> <span class="nn">jaxopt</span>
 <span class="kn">from</span> <span class="nn">autoip.notation</span> <span class="kn">import</span> <span class="n">Operator</span><span class="p">,</span> <span class="n">LinearOperator</span>
-<span class="kn">from</span> <span class="nn">autoip.gaussian</span> <span class="kn">import</span> <span class="n">Gaussian</span><span class="p">,</span> <span class="n">logpdf</span><span class="p">,</span> <span class="n">precision_action</span>
+<span class="kn">from</span> <span class="nn">autoip.gaussian</span> <span class="kn">import</span> <span class="n">Gaussian</span><span class="p">,</span> <span class="n">logpdf</span><span class="p">,</span> <span class="n">precision_action</span><span class="p">,</span> <span class="n">sample</span>
 <span class="kn">from</span> <span class="nn">jax</span> <span class="kn">import</span> <span class="n">Array</span>
 <span class="kn">from</span> <span class="nn">jax.tree_util</span> <span class="kn">import</span> <span class="n">Partial</span>
 <span class="kn">from</span> <span class="nn">jax.typing</span> <span class="kn">import</span> <span class="n">ArrayLike</span>
 
 
+<div class="viewcode-block" id="TIIP"><a class="viewcode-back" href="../../autoip.html#autoip.TIIP.TIIP">[docs]</a><span class="nd">@chex</span><span class="o">.</span><span class="n">dataclass</span>
+<span class="k">class</span> <span class="nc">TIIP</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dataclass representing a Time Independent Inverse Problem.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        P_prior: The prior distribution.</span>
+<span class="sd">        P_obs: The observation distribution.</span>
+<span class="sd">        F: The parameter-to-observable map.</span>
+<span class="sd">        y: The observation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">P_prior</span><span class="p">:</span> <span class="n">Gaussian</span>
+    <span class="n">P_obs</span><span class="p">:</span> <span class="n">Gaussian</span>
+    <span class="n">F</span><span class="p">:</span> <span class="n">Operator</span>
+    <span class="n">y</span><span class="p">:</span> <span class="n">chex</span><span class="o">.</span><span class="n">ArrayDevice</span></div>
+
+
 <div class="viewcode-block" id="linear_Hessian"><a class="viewcode-back" href="../../autoip.html#autoip.TIIP.linear_Hessian">[docs]</a><span class="k">def</span> <span class="nf">linear_Hessian</span><span class="p">(</span>
-    <span class="n">P_prior</span><span class="p">:</span> <span class="n">Gaussian</span><span class="p">,</span>
-    <span class="n">P_obs</span><span class="p">:</span> <span class="n">Gaussian</span><span class="p">,</span>
-    <span class="n">F</span><span class="p">:</span> <span class="n">LinearOperator</span><span class="p">,</span>
-    <span class="n">Ft</span><span class="p">:</span> <span class="n">LinearOperator</span><span class="p">,</span>
+    <span class="n">ip</span><span class="p">:</span> <span class="n">TIIP</span><span class="p">,</span>
     <span class="n">x</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the Hessian action of the cost functional for a linear</span>
@@ -107,24 +121,18 @@
 <span class="sd">    linear parameter-to-observable map.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        P_prior: The prior distribution.</span>
-<span class="sd">        P_obs: The observation distribution.</span>
-<span class="sd">        F: The linear parameter-to-observable map.</span>
-<span class="sd">        Ft: The adjoint of the linear parameter-to-observable map.</span>
-<span class="sd">        x: The point at which to evaluate the Hessian action.</span>
+<span class="sd">        ip: The inverse problem represented by a :class:`TIIP` dataclass.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The Hessian action at the given point.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">P_prior</span><span class="p">,</span> <span class="n">P_obs</span><span class="p">,</span> <span class="n">F</span> <span class="o">=</span> <span class="n">ip</span><span class="o">.</span><span class="n">P_prior</span><span class="p">,</span> <span class="n">ip</span><span class="o">.</span><span class="n">P_obs</span><span class="p">,</span> <span class="n">ip</span><span class="o">.</span><span class="n">F</span>
+    <span class="n">Ft</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">linear_transpose</span><span class="p">(</span><span class="n">F</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">Ft</span><span class="p">(</span><span class="n">precision_action</span><span class="p">(</span><span class="n">P_obs</span><span class="p">,</span> <span class="n">F</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span> <span class="o">+</span> <span class="n">precision_action</span><span class="p">(</span><span class="n">P_prior</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="linear_MAP"><a class="viewcode-back" href="../../autoip.html#autoip.TIIP.linear_MAP">[docs]</a><span class="k">def</span> <span class="nf">linear_MAP</span><span class="p">(</span>
-    <span class="n">P_obs</span><span class="p">:</span> <span class="n">Gaussian</span><span class="p">,</span>
-    <span class="n">P_prior</span><span class="p">:</span> <span class="n">Gaussian</span><span class="p">,</span>
-    <span class="n">F</span><span class="p">:</span> <span class="n">LinearOperator</span><span class="p">,</span>
-    <span class="n">Ft</span><span class="p">:</span> <span class="n">LinearOperator</span><span class="p">,</span>
-    <span class="n">y</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
+    <span class="n">ip</span><span class="p">:</span> <span class="n">TIIP</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the maximum a posteriori (MAP) estimate for a linear inverse problem.</span>
@@ -151,11 +159,7 @@
 <span class="sd">    the linear solver.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        P_obs: The observation distribution.</span>
-<span class="sd">        P_prior: The prior distribution.</span>
-<span class="sd">        F: The linear parameter-to-observable map.</span>
-<span class="sd">        Ft: The adjoint of the linear parameter-to-observable map.</span>
-<span class="sd">        y: The observation.</span>
+<span class="sd">        ip: The inverse problem represented by a :class:`TIIP` dataclass.</span>
 
 <span class="sd">    Keyword Args:</span>
 <span class="sd">        **kwargs: Keyword arguments to pass to :func:`jax.scipy.sparse.linalg.cg`. Note:</span>
@@ -166,6 +170,8 @@
 <span class="sd">        The MAP estimate.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">P_prior</span><span class="p">,</span> <span class="n">P_obs</span><span class="p">,</span> <span class="n">F</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">ip</span><span class="o">.</span><span class="n">P_prior</span><span class="p">,</span> <span class="n">ip</span><span class="o">.</span><span class="n">P_obs</span><span class="p">,</span> <span class="n">ip</span><span class="o">.</span><span class="n">F</span><span class="p">,</span> <span class="n">ip</span><span class="o">.</span><span class="n">y</span>
+    <span class="n">Ft</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">linear_transpose</span><span class="p">(</span><span class="n">F</span><span class="p">,</span> <span class="n">P_prior</span><span class="o">.</span><span class="n">mean</span><span class="p">)</span>
     <span class="n">rhs</span> <span class="o">=</span> <span class="n">Ft</span><span class="p">(</span><span class="n">precision_action</span><span class="p">(</span><span class="n">P_obs</span><span class="p">,</span> <span class="n">y</span><span class="p">))</span> <span class="o">+</span> <span class="n">precision_action</span><span class="p">(</span><span class="n">P_prior</span><span class="p">,</span> <span class="n">P_prior</span><span class="o">.</span><span class="n">mean</span><span class="p">)</span>
     <span class="n">Hv</span> <span class="o">=</span> <span class="n">Partial</span><span class="p">(</span><span class="n">linear_Hessian</span><span class="p">,</span> <span class="n">P_prior</span><span class="p">,</span> <span class="n">P_obs</span><span class="p">,</span> <span class="n">F</span><span class="p">,</span> <span class="n">Ft</span><span class="p">)</span>
     <span class="n">MAP</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">jsp</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">cg</span><span class="p">(</span><span class="n">Hv</span><span class="p">,</span> <span class="n">rhs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -173,10 +179,7 @@
 
 
 <div class="viewcode-block" id="IPCost"><a class="viewcode-back" href="../../autoip.html#autoip.TIIP.IPCost">[docs]</a><span class="k">def</span> <span class="nf">IPCost</span><span class="p">(</span>
-    <span class="n">P_obs</span><span class="p">:</span> <span class="n">Gaussian</span><span class="p">,</span>
-    <span class="n">P_prior</span><span class="p">:</span> <span class="n">Gaussian</span><span class="p">,</span>
-    <span class="n">F</span><span class="p">:</span> <span class="n">Operator</span><span class="p">,</span>
-    <span class="n">y</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
+    <span class="n">ip</span><span class="p">:</span> <span class="n">TIIP</span><span class="p">,</span>
     <span class="n">theta</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the cost functional for an inverse problem.</span>
@@ -186,26 +189,22 @@
 <span class="sd">    .. math::</span>
 <span class="sd">        \\hat{C}(\\theta) =</span>
 <span class="sd">        -\\log \\hat{p}(y | F(\\theta)) - \\log \\hat{p}(\\theta)</span>
-<span class="sd">    </span>
+
 <span class="sd">    where :math:`\\hat{p}(y | F(\\theta))` is the unnormalized likelihood of the</span>
 <span class="sd">    observation given the parameter-to-observable map evaluated at :math:`\\theta` and</span>
-<span class="sd">    :math:`\\hat{p}(\\theta)` is the unnormalized prior distribution. </span>
+<span class="sd">    :math:`\\hat{p}(\\theta)` is the unnormalized prior distribution.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        P_obs: The observation distribution.</span>
-<span class="sd">        P_prior: The prior distribution.</span>
-<span class="sd">        F: The parameter-to-observable map.</span>
-<span class="sd">        y: The observation.</span>
+<span class="sd">        ip: The inverse problem represented by a :class:`TIIP` dataclass.</span>
 <span class="sd">        theta: The point at which to evaluate the cost functional.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">P_prior</span><span class="p">,</span> <span class="n">P_obs</span><span class="p">,</span> <span class="n">F</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">ip</span><span class="o">.</span><span class="n">P_prior</span><span class="p">,</span> <span class="n">ip</span><span class="o">.</span><span class="n">P_obs</span><span class="p">,</span> <span class="n">ip</span><span class="o">.</span><span class="n">F</span><span class="p">,</span> <span class="n">ip</span><span class="o">.</span><span class="n">y</span>
     <span class="k">return</span> <span class="o">-</span><span class="n">logpdf</span><span class="p">(</span><span class="n">P_obs</span><span class="p">,</span> <span class="n">F</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="o">-</span> <span class="n">y</span><span class="p">)</span> <span class="o">+</span> <span class="o">-</span><span class="n">logpdf</span><span class="p">(</span><span class="n">P_prior</span><span class="p">,</span> <span class="n">theta</span><span class="p">)</span></div>
 
+
+<span class="c1"># TODO: Register this as a custom derivative to IPCost.</span>
 <div class="viewcode-block" id="gradIPCost"><a class="viewcode-back" href="../../autoip.html#autoip.TIIP.gradIPCost">[docs]</a><span class="k">def</span> <span class="nf">gradIPCost</span><span class="p">(</span>
-    <span class="n">P_obs</span><span class="p">:</span> <span class="n">Gaussian</span><span class="p">,</span>
-    <span class="n">P_prior</span><span class="p">:</span> <span class="n">Gaussian</span><span class="p">,</span>
-    <span class="n">F</span><span class="p">:</span> <span class="n">Operator</span><span class="p">,</span>
-    <span class="n">Jt</span><span class="p">:</span> <span class="n">LinearOperator</span><span class="p">,</span>
-    <span class="n">y</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
+    <span class="n">ip</span><span class="p">:</span> <span class="n">TIIP</span><span class="p">,</span>
     <span class="n">theta</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the gradient of the cost functional for an inverse problem.</span>
@@ -216,7 +215,7 @@
 <span class="sd">        \\nabla \\hat{C}(\\theta) =</span>
 <span class="sd">        J^T \\Sigma_{\\rm obs}^{-1} \\left( F(\\theta) - y \\right) +</span>
 <span class="sd">        \\Sigma_{\\rm prior}^{-1} \\left( \\theta - \\mu_{\\rm prior} \\right)</span>
-<span class="sd">    </span>
+
 <span class="sd">    where :math:`\\Sigma_{\\rm obs}` and :math:`\\Sigma_{\\rm prior}` are the covariance</span>
 <span class="sd">    matrices of the observation and prior distributions respectively, :math:`F` is the</span>
 <span class="sd">    parameter-to-observable map, :math:`J` is the Jacobian of the</span>
@@ -225,17 +224,41 @@
 <span class="sd">    prior}` is the mean of the prior distribution.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        P_obs: The observation distribution.</span>
-<span class="sd">        P_prior: The prior distribution.</span>
-<span class="sd">        F: The parameter-to-observable map.</span>
-<span class="sd">        Jt: The adjoint of the parameter-to-observable map.</span>
-<span class="sd">        y: The observation.</span>
+<span class="sd">        ip: The inverse problem represented by a :class:`TIIP` dataclass.</span>
 <span class="sd">        theta: The point at which to evaluate the gradient of the cost functional.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="p">(</span>
-        <span class="n">Jt</span><span class="p">(</span><span class="n">precision_action</span><span class="p">(</span><span class="n">P_obs</span><span class="p">,</span> <span class="n">F</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="o">-</span> <span class="n">y</span><span class="p">))</span> 
-        <span class="o">+</span> <span class="n">precision_action</span><span class="p">(</span><span class="n">P_prior</span><span class="p">,</span> <span class="n">theta</span> <span class="o">-</span> <span class="n">P_prior</span><span class="o">.</span><span class="n">mean</span><span class="p">)</span>
+    <span class="n">P_prior</span><span class="p">,</span> <span class="n">P_obs</span><span class="p">,</span> <span class="n">F</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">ip</span><span class="o">.</span><span class="n">P_prior</span><span class="p">,</span> <span class="n">ip</span><span class="o">.</span><span class="n">P_obs</span><span class="p">,</span> <span class="n">ip</span><span class="o">.</span><span class="n">F</span><span class="p">,</span> <span class="n">ip</span><span class="o">.</span><span class="n">y</span>
+    <span class="n">Jt</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">vjp</span><span class="p">(</span><span class="n">F</span><span class="p">,</span> <span class="n">theta</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">Jt</span><span class="p">(</span><span class="n">precision_action</span><span class="p">(</span><span class="n">P_obs</span><span class="p">,</span> <span class="n">F</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="o">-</span> <span class="n">y</span><span class="p">))</span> <span class="o">+</span> <span class="n">precision_action</span><span class="p">(</span>
+        <span class="n">P_prior</span><span class="p">,</span> <span class="n">theta</span> <span class="o">-</span> <span class="n">P_prior</span><span class="o">.</span><span class="n">mean</span>
     <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="nonlinear_MAP"><a class="viewcode-back" href="../../autoip.html#autoip.TIIP.nonlinear_MAP">[docs]</a><span class="k">def</span> <span class="nf">nonlinear_MAP</span><span class="p">(</span>
+    <span class="n">ip</span><span class="p">:</span> <span class="n">TIIP</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the maximum a posteriori (MAP) estimate for a nonlinear inverse problem.</span>
+
+<span class="sd">    This is given by solving the optimization problem</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \\hat{\\theta} = \\arg\\min_{\\theta} \\hat{C}(\\theta)</span>
+
+<span class="sd">    where :math:`\\hat{C}(\\theta)` is the cost functional for the inverse problem. This</span>
+<span class="sd">    is done using Jax&#39;s :func:`jaxopt.LBFGS` function.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        ip: The inverse problem represented by a :class:`TIIP` dataclass.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Returns (params, state) where params is the MAP estimate and state is the state</span>
+<span class="sd">        of the optimizer.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">F</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="n">IPCost</span><span class="p">(</span><span class="n">ip</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
+    <span class="n">dF</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="n">gradIPCost</span><span class="p">(</span><span class="n">ip</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
+    <span class="n">F_vag</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="p">(</span><span class="n">F</span><span class="p">(</span><span class="n">t</span><span class="p">),</span> <span class="n">dF</span><span class="p">(</span><span class="n">t</span><span class="p">))</span>
+    <span class="n">solver</span> <span class="o">=</span> <span class="n">jaxopt</span><span class="o">.</span><span class="n">LBFGS</span><span class="p">(</span><span class="n">F_vag</span><span class="p">,</span> <span class="n">value_and_grad</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">solver</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">ip</span><span class="o">.</span><span class="n">P_prior</span><span class="o">.</span><span class="n">mean</span><span class="p">)</span></div>
 </pre></div>
 
            </div>
