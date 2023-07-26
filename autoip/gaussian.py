@@ -77,3 +77,33 @@ def logpdf(G: Gaussian, x: ArrayLike, normalized=False) -> float:
     if normalized:
         p -= G.L.shape[0] * jnp.log(jnp.prod(jnp.diag(G.L)))
     return p
+
+
+# TODO: Verify correctness!
+def kl_divergence(G1: Gaussian, G2: Gaussian) -> float:
+    """Compute the KL divergence between two Gaussian distributions.
+
+    This is given by the expression
+
+    .. math::
+        D_{\\rm KL}(\\mathcal{N}(\\mu_1, \\Sigma_1) || \\mathcal{N}(\\mu_2, \\Sigma_2))
+        = \\frac{1}{2} \\left(
+            \\log \\frac{|\\Sigma_2|}{|\\Sigma_1|}
+            - k
+            + \\mathrm{tr}(\\Sigma_2^{-1} \\Sigma_1)
+            + ||\\mu_2 - \\mu_1||^2_{\\Sigma_2^{-1}}
+        \\right)
+
+    Args:
+        G1: The first Gaussian distribution.
+        G2: The second Gaussian distribution.
+    """
+    k = G1.mean.shape[0]
+    y = precision_action(G2, G2.mean - G1.mean)
+    M = jsp.linalg.solve_triangular(G2.L, G1.L, lower=True)
+    return 0.5 * (
+        jnp.linalg.norm(M, ord="fro") ** 2
+        - k
+        + jnp.linalg.norm(y) ** 2
+        + 2.0 * jnp.sum(jnp.log(jnp.diag(G2.L) / jnp.diag(G1.L)))
+    )

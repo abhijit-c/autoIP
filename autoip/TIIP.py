@@ -6,6 +6,7 @@ import jax.scipy as jsp
 import jaxopt
 from autoip.notation import Operator, LinearOperator
 from autoip.gaussian import Gaussian, logpdf, precision_action, sample
+from autoip.utils import LinearOperator2Matrix
 from jax import Array
 from jax.tree_util import Partial
 from jax.typing import ArrayLike
@@ -47,12 +48,15 @@ def linear_Hessian(
 
     Args:
         ip: The inverse problem represented by a :class:`TIIP` dataclass.
+        x: Point to act on.
 
     Returns:
         The Hessian action at the given point.
     """
     P_prior, P_obs, F = ip.P_prior, ip.P_obs, ip.F
-    Ft = jax.linear_transpose(F, x)
+    # TODO: Inefficient to recompute this every time.
+    Ft_tup = jax.linear_transpose(F, x)
+    Ft = lambda x: Ft_tup(x)[0]
     return Ft(precision_action(P_obs, F(x))) + precision_action(P_prior, x)
 
 
@@ -87,20 +91,48 @@ def linear_MAP(
         ip: The inverse problem represented by a :class:`TIIP` dataclass.
 
     Keyword Args:
-        **kwargs: Keyword arguments to pass to :func:`jax.scipy.sparse.linalg.cg`. Note:
-            There is absolutely no error checking done here, so if you pass in an
-            invalid keyword argument, you'll get an error from Jax.
+        **kwargs: Keyword arguments to pass to :func:`jax.scipy.sparse.linalg.cg`.
 
     Returns:
         The MAP estimate.
 
     """
     P_prior, P_obs, F, y = ip.P_prior, ip.P_obs, ip.F, ip.y
-    Ft = jax.linear_transpose(F, P_prior.mean)
+    Ft_tup = jax.linear_transpose(F, P_prior.mean)
+    Ft = lambda x: Ft_tup(x)[0]
     rhs = Ft(precision_action(P_obs, y)) + precision_action(P_prior, P_prior.mean)
-    Hv = Partial(linear_Hessian, P_prior, P_obs, F, Ft)
+    Hv = Partial(linear_Hessian, ip)
     MAP, info = jsp.sparse.linalg.cg(Hv, rhs, **kwargs)
     return MAP
+
+
+def assemble_linear_posterior(ip: TIIP, **kwargs) -> Gaussian:
+    """Assemble the posterior distribution for a linear inverse problem.
+
+    This is glue code that assembles the posterior distribution for a linear inverse
+    problem from the MAP estimate and by explicitly computing the posterior covariance
+    and its Cholesky factorization from the linear Hessian of the cost functional, i.e.
+    :math:`\\Sigma_{\\rm post} = H^{-1}`.
+
+    .. warning::
+        Constructing the posterior distribution in this way is not recommended for
+        even medium sized problems, as it involes :math:`N` Hessian solves for
+        :math:`H \\in \\mathbb{R}^{N \\times N}`.
+
+    Args:
+        ip: The inverse problem represented by a :class:`TIIP` dataclass.
+
+    Keyword Args:
+        **kwargs: Keyword arguments to pass to :func:`jax.scipy.sparse.linalg.cg` for
+            both the MAP estimate and in the construction of the posterior covariance
+            from linear Hessian solves.
+    """
+    mean = linear_MAP(ip, **kwargs)
+    Hess_mv = Partial(linear_Hessian, ip)
+    Hess_inv_mv = lambda x: jsp.sparse.linalg.cg(Hess_mv, x, **kwargs)[0]
+    cov = LinearOperator2Matrix(Hess_inv_mv, mean.shape[0])
+    L = jsp.linalg.cholesky(cov, lower=True)
+    return Gaussian(mean=mean, cov=cov, L=L)
 
 
 def IPCost(

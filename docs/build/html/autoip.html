@@ -62,6 +62,7 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#autoip.TIIP.linear_Hessian"><code class="docutils literal notranslate"><span class="pre">linear_Hessian()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#autoip.TIIP.linear_MAP"><code class="docutils literal notranslate"><span class="pre">linear_MAP()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#autoip.TIIP.assemble_linear_posterior"><code class="docutils literal notranslate"><span class="pre">assemble_linear_posterior()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#autoip.TIIP.IPCost"><code class="docutils literal notranslate"><span class="pre">IPCost()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#autoip.TIIP.gradIPCost"><code class="docutils literal notranslate"><span class="pre">gradIPCost()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#autoip.TIIP.nonlinear_MAP"><code class="docutils literal notranslate"><span class="pre">nonlinear_MAP()</span></code></a></li>
@@ -188,7 +189,7 @@ linear parameter-to-observable map.</p>
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>ip</strong> (<a class="reference internal" href="#autoip.TIIP.TIIP" title="autoip.TIIP.TIIP"><em>TIIP</em></a>) – The inverse problem represented by a <a class="reference internal" href="#autoip.TIIP.TIIP" title="autoip.TIIP.TIIP"><code class="xref py py-class docutils literal notranslate"><span class="pre">TIIP</span></code></a> dataclass.</p></li>
-<li><p><strong>x</strong> (<em>ArrayLike</em>) – </p></li>
+<li><p><strong>x</strong> (<em>ArrayLike</em>) – Point to act on.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -225,15 +226,42 @@ the linear solver.</p>
 <dd class="field-odd"><p><strong>ip</strong> (<a class="reference internal" href="#autoip.TIIP.TIIP" title="autoip.TIIP.TIIP"><em>TIIP</em></a>) – The inverse problem represented by a <a class="reference internal" href="#autoip.TIIP.TIIP" title="autoip.TIIP.TIIP"><code class="xref py py-class docutils literal notranslate"><span class="pre">TIIP</span></code></a> dataclass.</p>
 </dd>
 <dt class="field-even">Keyword Arguments</dt>
-<dd class="field-even"><p><strong>**kwargs</strong> – Keyword arguments to pass to <code class="xref py py-func docutils literal notranslate"><span class="pre">jax.scipy.sparse.linalg.cg()</span></code>. Note:
-There is absolutely no error checking done here, so if you pass in an
-invalid keyword argument, you’ll get an error from Jax.</p>
+<dd class="field-even"><p><strong>**kwargs</strong> – Keyword arguments to pass to <code class="xref py py-func docutils literal notranslate"><span class="pre">jax.scipy.sparse.linalg.cg()</span></code>.</p>
 </dd>
 <dt class="field-odd">Returns</dt>
 <dd class="field-odd"><p>The MAP estimate.</p>
 </dd>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="autoip.TIIP.assemble_linear_posterior">
+<span class="sig-prename descclassname"><span class="pre">autoip.TIIP.</span></span><span class="sig-name descname"><span class="pre">assemble_linear_posterior</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ip</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/autoip/TIIP.html#assemble_linear_posterior"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#autoip.TIIP.assemble_linear_posterior" title="Permalink to this definition"></a></dt>
+<dd><p>Assemble the posterior distribution for a linear inverse problem.</p>
+<p>This is glue code that assembles the posterior distribution for a linear inverse
+problem from the MAP estimate and by explicitly computing the posterior covariance
+and its Cholesky factorization from the linear Hessian of the cost functional, i.e.
+<span class="math notranslate nohighlight">\(\Sigma_{\rm post} = H^{-1}\)</span>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Constructing the posterior distribution in this way is not recommended for
+even medium sized problems, as it involes <span class="math notranslate nohighlight">\(N\)</span> Hessian solves for
+<span class="math notranslate nohighlight">\(H \in \mathbb{R}^{N \times N}\)</span>.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>ip</strong> (<a class="reference internal" href="#autoip.TIIP.TIIP" title="autoip.TIIP.TIIP"><em>TIIP</em></a>) – The inverse problem represented by a <a class="reference internal" href="#autoip.TIIP.TIIP" title="autoip.TIIP.TIIP"><code class="xref py py-class docutils literal notranslate"><span class="pre">TIIP</span></code></a> dataclass.</p>
+</dd>
+<dt class="field-even">Keyword Arguments</dt>
+<dd class="field-even"><p><strong>**kwargs</strong> – Keyword arguments to pass to <code class="xref py py-func docutils literal notranslate"><span class="pre">jax.scipy.sparse.linalg.cg()</span></code> for
+both the MAP estimate and in the construction of the posterior covariance
+from linear Hessian solves.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#autoip.gaussian.Gaussian" title="autoip.gaussian.Gaussian"><em>Gaussian</em></a></p>
 </dd>
 </dl>
 </dd></dl>
