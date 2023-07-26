@@ -152,6 +152,35 @@
     <span class="k">if</span> <span class="n">normalized</span><span class="p">:</span>
         <span class="n">p</span> <span class="o">-=</span> <span class="n">G</span><span class="o">.</span><span class="n">L</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">L</span><span class="p">)))</span>
     <span class="k">return</span> <span class="n">p</span></div>
+
+
+<div class="viewcode-block" id="kl_divergence"><a class="viewcode-back" href="../../autoip.html#autoip.gaussian.kl_divergence">[docs]</a><span class="k">def</span> <span class="nf">kl_divergence</span><span class="p">(</span><span class="n">G1</span><span class="p">:</span> <span class="n">Gaussian</span><span class="p">,</span> <span class="n">G2</span><span class="p">:</span> <span class="n">Gaussian</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the KL divergence between two Gaussian distributions.</span>
+
+<span class="sd">    This is given by the expression</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        D_{\\rm KL}(\\mathcal{N}(\\mu_1, \\Sigma_1) || \\mathcal{N}(\\mu_2, \\Sigma_2))</span>
+<span class="sd">        = \\frac{1}{2} \\left(</span>
+<span class="sd">            \\log \\frac{|\\Sigma_2|}{|\\Sigma_1|}</span>
+<span class="sd">            - k</span>
+<span class="sd">            + \\mathrm{tr}(\\Sigma_2^{-1} \\Sigma_1)</span>
+<span class="sd">            + ||\\mu_2 - \\mu_1||^2_{\\Sigma_2^{-1}}</span>
+<span class="sd">        \\right)</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        G1: The first Gaussian distribution.</span>
+<span class="sd">        G2: The second Gaussian distribution.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="n">G1</span><span class="o">.</span><span class="n">mean</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">precision_action</span><span class="p">(</span><span class="n">G2</span><span class="p">,</span> <span class="n">G2</span><span class="o">.</span><span class="n">mean</span> <span class="o">-</span> <span class="n">G1</span><span class="o">.</span><span class="n">mean</span><span class="p">)</span>
+    <span class="n">M</span> <span class="o">=</span> <span class="n">jsp</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve_triangular</span><span class="p">(</span><span class="n">G2</span><span class="o">.</span><span class="n">L</span><span class="p">,</span> <span class="n">G1</span><span class="o">.</span><span class="n">L</span><span class="p">,</span> <span class="n">lower</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span>
+        <span class="n">jsp</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="nb">ord</span><span class="o">=</span><span class="s2">&quot;fro&quot;</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+        <span class="o">-</span> <span class="n">k</span>
+        <span class="o">+</span> <span class="n">jnp</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+        <span class="o">+</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">G2</span><span class="o">.</span><span class="n">L</span><span class="p">)</span> <span class="o">/</span> <span class="n">jnp</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">G1</span><span class="o">.</span><span class="n">L</span><span class="p">)))</span>
+    <span class="p">)</span></div>
 </pre></div>
 
            </div>

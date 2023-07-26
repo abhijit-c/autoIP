@@ -67,11 +67,16 @@
 <li class="toctree-l3"><a class="reference internal" href="#autoip.TIIP.nonlinear_MAP"><code class="docutils literal notranslate"><span class="pre">nonlinear_MAP()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#module-autoip.gaussian">Gaussian Utilities</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-autoip.gaussian">Gaussian Distribution Utilities</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#autoip.gaussian.Gaussian"><code class="docutils literal notranslate"><span class="pre">Gaussian</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#autoip.gaussian.precision_action"><code class="docutils literal notranslate"><span class="pre">precision_action()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#autoip.gaussian.sample"><code class="docutils literal notranslate"><span class="pre">sample()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#autoip.gaussian.logpdf"><code class="docutils literal notranslate"><span class="pre">logpdf()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#autoip.gaussian.kl_divergence"><code class="docutils literal notranslate"><span class="pre">kl_divergence()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-autoip.utils">General Utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#autoip.utils.LinearOperator2Matrix"><code class="docutils literal notranslate"><span class="pre">LinearOperator2Matrix()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#module-autoip.notation">Assorted Type Hints</a><ul>
@@ -304,7 +309,7 @@ of the optimizer.</p>
 
 </section>
 <section id="module-autoip.gaussian">
-<span id="gaussian-utilities"></span><h2>Gaussian Utilities<a class="headerlink" href="#module-autoip.gaussian" title="Permalink to this heading"></a></h2>
+<span id="gaussian-distribution-utilities"></span><h2>Gaussian Distribution Utilities<a class="headerlink" href="#module-autoip.gaussian" title="Permalink to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="autoip.gaussian.Gaussian">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">autoip.gaussian.</span></span><span class="sig-name descname"><span class="pre">Gaussian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mean</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cov</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">L</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/autoip/gaussian.html#Gaussian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#autoip.gaussian.Gaussian" title="Permalink to this definition"></a></dt>
@@ -383,6 +388,55 @@ is computed using a Cholesky accelerated triangular solve via the Jax function
 </dd>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="autoip.gaussian.kl_divergence">
+<span class="sig-prename descclassname"><span class="pre">autoip.gaussian.</span></span><span class="sig-name descname"><span class="pre">kl_divergence</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">G1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">G2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/autoip/gaussian.html#kl_divergence"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#autoip.gaussian.kl_divergence" title="Permalink to this definition"></a></dt>
+<dd><p>Compute the KL divergence between two Gaussian distributions.</p>
+<p>This is given by the expression</p>
+<div class="math notranslate nohighlight">
+\[D_{\rm KL}(\mathcal{N}(\mu_1, \Sigma_1) || \mathcal{N}(\mu_2, \Sigma_2))
+= \frac{1}{2} \left(
+    \log \frac{|\Sigma_2|}{|\Sigma_1|}
+    - k
+    + \mathrm{tr}(\Sigma_2^{-1} \Sigma_1)
+    + ||\mu_2 - \mu_1||^2_{\Sigma_2^{-1}}
+\right)\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>G1</strong> (<a class="reference internal" href="#autoip.gaussian.Gaussian" title="autoip.gaussian.Gaussian"><em>Gaussian</em></a>) – The first Gaussian distribution.</p></li>
+<li><p><strong>G2</strong> (<a class="reference internal" href="#autoip.gaussian.Gaussian" title="autoip.gaussian.Gaussian"><em>Gaussian</em></a>) – The second Gaussian distribution.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-autoip.utils">
+<span id="general-utilities"></span><h2>General Utilities<a class="headerlink" href="#module-autoip.utils" title="Permalink to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="autoip.utils.LinearOperator2Matrix">
+<span class="sig-prename descclassname"><span class="pre">autoip.utils.</span></span><span class="sig-name descname"><span class="pre">LinearOperator2Matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">F</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">domain_dim</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/autoip/utils.html#LinearOperator2Matrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#autoip.utils.LinearOperator2Matrix" title="Permalink to this definition"></a></dt>
+<dd><p>Convert a linear operator to a matrix.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>F</strong> (<em>LinearOperator</em>) – The linear operator.</p></li>
+<li><p><strong>domain_dim</strong> (<em>int</em>) – Dimension of the domain of the operator.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The matrix representation of the linear operator.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Array</p>
 </dd>
 </dl>
 </dd></dl>

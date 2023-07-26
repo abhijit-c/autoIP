@@ -14,10 +14,17 @@ Time Independent Inverse problems
    :undoc-members:
    :show-inheritance:
 
-Gaussian Utilities
-------------------
+Gaussian Distribution Utilities
+-------------------------------
 
 .. automodule:: autoip.gaussian
+   :members:
+   :show-inheritance:
+
+General Utilities
+-----------------
+
+.. automodule:: autoip.utils
    :members:
    :show-inheritance:
 
