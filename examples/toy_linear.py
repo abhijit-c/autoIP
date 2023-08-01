@@ -26,7 +26,7 @@ seed = random.PRNGKey(0)
 
 
 @jax.jit
-def kld_ip(p, q):
+def param2kld(p, q):
     def general_toy_linear(x, p=0.25, q=0.25):
         return jnp.array([p * x[0] + q * x[1], q * x[0] + (1 - p) * x[1]])
 
@@ -44,6 +44,7 @@ def kld_ip(p, q):
     L_obs_err = jsp.linalg.cholesky(G_obs_err, lower=True)
     P_ops_err = Gaussian(mean=mu_obs_err, cov=G_obs_err, L=L_obs_err)
 
+    # TODO: Data generation should be a function of the model.
     key, subkey = random.split(seed)
     y = F(true_x) + sample(P_ops_err, subkey)
 
@@ -55,11 +56,9 @@ def kld_ip(p, q):
 p_vals = jnp.linspace(0.0, 1.0, 22)[1:-1]
 q_vals = jnp.linspace(0.0, 1.0, 22)[1:-1]
 p_grid, q_grid = jnp.meshgrid(p_vals, q_vals)
+pq_vec = jnp.stack([p_grid.flatten(), q_grid.flatten()]).T
 
-kld_vals = jnp.zeros_like(p_grid)
-for i in range(p_grid.shape[0]):
-    for j in range(p_grid.shape[1]):
-        kld_vals.at[i, j].set(kld_ip(p_grid[i, j], q_grid[i, j]))
+kld_vals = jax.vmap(param2kld)(p_grid.flatten(), q_grid.flatten()).reshape(p_grid.shape)
 
 import matplotlib.pyplot as plt
 
